@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+    <script src="/js/jquery.min.js"></script>
+    <script src="/js/vue.js"></script>
+    <!-- 引入样式 -->
+    <link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">
+    <!-- 引入组件库 -->
+    <script src="https://unpkg.com/element-ui/lib/index.js"></script>
+    <script src="https://cdn.bootcss.com/js-cookie/latest/js.cookie.min.js"></script>
+    <style>
+        * {
+            padding: 0px;
+            margin: 0px;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+
+        #container {
+            width: 600px;
+            position: fixed;
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            padding: 2rem 1.5rem;
+            border-radius: 10px;
+            box-shadow: 1px 1px 1px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            top: 20%;
+            left: 50%;
+            margin-left: -300px;
+        }
+
+        .header {
+            font-size: 1.8rem;
+            color: rgba(0, 0, 0, 0.7);
+        }
+
+        .tit {
+            font-size: 1.8rem;
+        }
+
+        a {
+            color: rgba(0, 0, 0, 0.5);
+            text-decoration: none;
+        }
+
+        a:hover {
+            color: rgba(0, 0, 0, 0.8);
+        }
+
+        .msg {
+            padding: 10px;
+        }
+
+        .ms {
+            line-height: 40px;
+        }
+
+        .msg a {
+            line-height: 40px;
+        }
+
+        .success {
+            color: rgba(64, 158, 255, 1);
+        }
+
+        .error {
+            color: rgba(240, 131, 28, 1);
+        }
+    </style>
+</head>
+
+<body>
+    <div id="container">
+        <div class="header">
+            <div class="pic">
+                <img :src="message.src" alt="">
+            </div>
+            <div class="tit">问卷系统</div>
+        </div>
+        <div class="msg" :class="message.status">
+            <div class="ms">{{message.msg}}</div>
+            <div>
+                <a :href="message.link">{{message.linkText}}</a>
+            </div>
+        </div>
+    </div>
+    <script>
+        var vm = new Vue({
+            el: '#container',
+            created: function () {
+                this.message = Cookies.getJSON('message')
+            },
+            data: function () {
+                return {
+                    message: {}
+                }
+            }
+        })
+
+    </script>
+</body>
+
+</html>

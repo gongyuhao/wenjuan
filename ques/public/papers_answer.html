@@ -1,0 +1,123 @@
+<div id="paperAnswer">
+    <el-card header="问卷列表">
+        <ve-pie :data="bingchartData" :settings="{}"></ve-pie>
+        <el-table :data="answerList">
+            <el-table-column prop='title' label="问卷标题" width="180"></el-table-column>
+            <el-table-column prop='note' label="建议" width="180"></el-table-column>
+            <el-table-column prop='content' label="内容">
+                <template slot-scope="scope">
+                    <div v-for="(item,index) in scope.row.content" :key="'index'+index">
+                        <span>{{item.text}}</span>
+                        <el-tag size="mini">{{trAnswer(item.answer,scope.row.item)}}</el-tag>
+                    </div>
+                </template>
+            </el-table-column>
+            <el-table-column label="统计">
+                <template slot-scope="scope">
+                    <ve-histogram height='200px' :data="scope.row.chartData" :settings="{}"></ve-histogram>
+                </template>
+            </el-table-column>
+        </el-table>
+    </el-card>
+</div>
+
+<script>
+    new Vue({
+        el: '#paperAnswer',
+        created: function () {
+            var _this = this
+            $.get('/papers/answer', function (result) {
+                if (result.error == 0) {
+                    result = JSON.parse(JSON.stringify(result), function (key, val) {
+                        if (key == 'content' || key == 'item') {
+                            return JSON.parse(val)
+                        } else {
+                            return val
+                        }
+                    })
+                    console.log(result.data)
+                    //每一份问卷的数据
+                    for (var i = 0; i < result.data.length; i++) {
+                        var chartData = {
+                            columns: ['level', 'pre'],
+                            rows: []
+                        }
+                        var tmp = {}
+                        for (var k = 0; k < result.data[i].content.length; k++) {
+                            var answer = result.data[i].content[k].answer
+                            answer = _this.trAnswer(answer, result.data[i].item)
+                            if (tmp[answer]) {
+                                tmp[answer]++
+                            } else {
+                                tmp[answer] = 1
+                            }
+                        }
+                        for (var l in tmp) {
+                            chartData.rows.push({
+                                level: l,
+                                pre: tmp[l]
+                            })
+                        }
+                        result.data[i].chartData = chartData
+                    }
+                    //总体数据
+                    for (var j = 0; j < result.data.length; j++) {
+                        var bingchartData = {
+                            columns: ['评价', '数量'],
+                            rows: []
+                        }
+                        var Banswer = []
+                        for (n in result.data) {
+                            for (m in result.data[n].content) {
+                                var wanswer = result.data[n].content[m].answer
+                                wanswer = _this.trAnswer(result.data[n].content[m].answer, result.data[j].item)
+                                Banswer.push(wanswer)
+                            }
+                        }
+                        var obj = {}
+                        for (w in Banswer) {
+                            var ai = Banswer[w]
+                            if (obj[ai]) {
+                                obj[ai]++
+                            } else {
+                                obj[ai] = 1
+                            }
+                        }
+                        for (p in obj) {
+                            bingchartData.rows.push({
+                                评价: p,
+                                数量: obj[p]
+                            })
+                        }
+                    }
+                    _this.answerList = result.data
+                    _this.bingchartData = bingchartData
+                    console.log(bingchartData)
+                }
+            })
+        },
+        data: {
+            answerList: [],
+            answerList1: [],
+            chartData: {
+                columns: ['level', 'pre'],
+                rows: [
+                    { 'level': '优秀', 'pre': 30 },
+                    { 'level': '良好', 'pre': 10 },
+                    { 'level': '中等', 'pre': 10 },
+                    { 'level': '很差', 'pre': 50 },
+                ]
+            },
+            bingchartData: {},
+        },
+        methods: {
+            trAnswer: function (id, item) {
+                mitem = {}
+                for (var j = 0; j < item.length; j++) {
+                    mitem[item[j].id] = item[j].text
+                }
+                return mitem[id]
+            }
+        }
+    })
+</script>

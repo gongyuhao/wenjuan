@@ -1,0 +1,270 @@
+<div id="users">
+    <el-table v-loading="loading" :data="usersData.slice((currentPage-1)*pagesize,currentPage*pagesize)" style="width: 100%">
+        <el-table-column prop="id" label="编号" width="100">
+        </el-table-column>
+        <el-table-column label="头像" width="100">
+            <template slot-scope="scope">
+                <img :src="scope.row.photo" alt="" class="imgP">
+            </template>
+        </el-table-column>
+        <el-table-column prop="username" label="用户名" width="80">
+        </el-table-column>
+        <el-table-column label="性别" width="50">
+            <template slot-scope="scope">
+                {{sex[scope.row.sex]}}
+            </template>
+        </el-table-column>
+        <el-table-column prop="email" label="邮箱">
+        </el-table-column>
+        <el-table-column prop="phone" label="手机">
+        </el-table-column>
+        <el-table-column label="创建时间">
+            <template slot-scope="scope">
+                {{scope.row.ctime | time}}
+            </template>
+        </el-table-column>
+        <el-table-column label="修改时间">
+            <template slot-scope="scope">
+                {{scope.row.mtime | time}}
+            </template>
+        </el-table-column>
+        <el-table-column fixed="right" label="操作" width="200">
+            <template slot-scope="scope">
+                <el-button size="mini" @click="showForm(scope)">编辑</el-button>
+                <el-button size="mini" type="danger" @click.native.prevent="del(scope, usersData)">删除</el-button>
+            </template>
+        </el-table-column>
+    </el-table>
+
+    <el-pagination @size-change="handleSizeChange" @current-change="handleCurrentChange" :current-page="currentPage" :page-sizes="[3, 5, 7, 9]"
+        :page-size="pagesize" layout="total, sizes, prev, pager, next, jumper" :total="usersData.length">
+    </el-pagination>
+
+    <el-dialog title="编辑" :visible.sync="dialogFormVisible">
+        <el-form :model="form" id="regFrm" :status-icon="true" :rules="rules" label-position="left" ref="form">
+            <el-form-item label="用户名" :label-width="formLabelWidth" prop="username">
+                <el-input v-model="form.username" auto-complete="off"></el-input>
+            </el-form-item>
+            <el-form-item label="邮箱" :label-width="formLabelWidth" prop="email">
+                <el-input v-model="form.email" auto-complete="off"></el-input>
+            </el-form-item>
+            <el-form-item label="手机" :label-width="formLabelWidth" prop="phone">
+                <el-input v-model="form.phone" auto-complete="off"></el-input>
+            </el-form-item>
+            <el-form-item label="性别" :label-width="formLabelWidth">
+                <el-radio-group v-model="form.sex">
+                    <el-radio :label="1">男</el-radio>
+                    <el-radio :label="2">女</el-radio>
+                    <el-radio :label="3">保密</el-radio>
+                </el-radio-group>
+            </el-form-item>
+        </el-form>
+        <div slot="footer" class="dialog-footer">
+            <el-button @click="dialogFormVisible = false">取 消</el-button>
+            <el-button type="primary" @click="edit()">确 定</el-button>
+        </div>
+    </el-dialog>
+</div>
+<script>
+    new Vue({
+        el: '#users',
+        data: function () {
+            return {
+                usersData: [],
+                sex: ['', '男', '女', '保密'],
+                loading: true,
+                dialogFormVisible: false,
+                form: {
+                    username: '',
+                    password: '',
+                    email: '',
+                    phone: '',
+                    sex: '',
+                    id: ''
+                },
+                currentPage: 1,
+                pagesize: 5,
+                formLabelWidth: '80px',
+                rules: {
+                    username: [
+                        {
+                            validator: function (rule, value, callback) {
+                                var usernamereg = /^[a-z]\w{2,17}$/
+                                if (value.trim() == '') {
+                                    callback(new Error('请输入用户名'))
+                                } else if (!usernamereg.test(value)) {
+                                    callback(new Error('请输入2-18个字符，以小写字母开始'))
+                                } else {
+                                    callback()
+                                }
+                            },
+                            trigger: 'blur'
+                        },
+                    ],
+                    email: [
+                        {
+                            validator: function (rule, value, callback) {
+                                var emailnamereg = /^[a-z0-9]+([._\\-]*[a-z0-9])*@([a-z0-9]+[-a-z0-9]*[a-z0-9]+.){1,63}[a-z0-9]+$/
+                                if (value.trim() == '') {
+                                    callback(new Error('请输入邮箱'))
+                                } else if (!emailnamereg.test(value)) {
+                                    callback(new Error('邮箱格式不合法'))
+                                } else {
+                                    callback()
+                                }
+                            },
+                            trigger: 'blur'
+                        }
+                    ],
+                    phone: [
+                        {
+                            validator: function (rule, value, callback) {
+                                var len = value.length
+                                var phonemsg = /^1([358][0-9]|4[579]|66|7[0135678]|9[89])[0-9]{8}$/
+                                if (value.trim() == '') {
+                                    callback(new Error('请输入手机号'))
+                                } else if (!phonemsg.test(value)) {
+                                    callback(new Error('您输入的手机号无效'))
+                                } else {
+                                    callback()
+                                }
+                            }
+                        }
+                    ]
+                }
+            }
+        },
+        created: function () {//获取用户信息
+            var _this = this
+            $.get('/users/get', function (result) {
+                if (result.error == 0) {
+                    _this.usersData = result.data
+                } else {
+                    console.error('数据获取失败')
+                }
+                _this.loading = false
+            }, 'json')
+        },
+        methods: {
+            del: function (scope) {//删除用户
+                var _this = this
+                this.$confirm('注意:删除后不可恢复!', '确定删除吗?', {
+                    confirmButtonText: '确定',
+                    cancelButtonText: '取消',
+                    type: 'warning',
+                    callback: function (action) {
+                        if (action == 'cancel') {
+                            return
+                        }
+                        //确认后删除
+                        _this.loading = true
+                        $.get('/users/del', { id: scope.row.id }, function (result) {
+                            if (result.error == 0) {
+                                _this.usersData.splice(scope.$index, 1)
+                                _this.$message({
+                                    type: 'success',
+                                    message: '删除成功!'
+                                })
+                            } else {
+                                console.error('删除失败')
+                            }
+                            _this.loading = false
+                        })
+                    }
+                })
+            },
+            handleSizeChange(val) {
+                this.pagesize = val;
+                //        console.log(`每页 ${val} 条`);
+            },
+            handleCurrentChange(val) {
+                this.currentPage = val;
+            },
+            showForm: function (scope) {
+                var _this = this
+                this.form.phone = scope.row.phone
+                this.form.username = scope.row.username
+                this.form.sex = scope.row.sex
+                this.form.email = scope.row.email
+                this.form.id = scope.row.id
+                this.form.password = ''
+                this.dialogFormVisible = true
+                // console.log(this.form.id)
+            },
+            edit: function () {
+                this.$refs.form.validate(function (valid) {
+                    if (!valid) {//验证全部通过提交数据
+                        return
+                    }
+                })
+                var _this = this;
+                console.log(_this.form)
+                $.post('/users/edit', {
+                    phone: _this.form.phone,
+                    username: _this.form.username,
+                    sex: _this.form.sex,
+                    email: _this.form.email,
+                    id: _this.form.id,
+                }, function (result) {
+                    if (result.error == 0) {
+                        _this.dialogFormVisible = false
+                        _this.loading = true
+                        $.get('/users/get', function (result) {
+                            if (result.error == 0) {
+                                _this.usersData = result.data
+                                _this.$message({
+                                    type: 'success',
+                                    message: '编辑成功!'
+                                })
+                            } else {
+                                console.error('获取失败')
+                            }
+                            _this.loading = false
+                        })
+                    } else {
+                        console.log("编辑失败")
+                        _this.$message({
+                            type: 'error',
+                            message: '编辑失败!'
+                        })
+                    }
+                })
+            }
+        },
+        filters: {
+            //时间格式化
+            time(time) {
+                if (new Date(time).getTime() != '0') {
+                    var ny = new Date(time),
+                        n = ny.getFullYear(),
+                        m = ny.getMonth() + 1,
+                        d = ny.getDate(),
+                        h = ny.getHours(),
+                        ms = ny.getMinutes(),
+                        s = ny.getSeconds()
+                    if (m < 10) {
+                        m = '0' + m
+                    }
+                    if (d < 10) {
+                        d = '0' + d
+                    }
+                    if (h < 10) {
+                        h = '0' + h
+                    }
+                    if (ms < 10) {
+                        ms = '0' + ms
+                    }
+                    if (s < 10) {
+                        s = '0' + s
+                    }
+                    return n + '-' + m + '-' + d + ' ' + h + ':' + ms + ':' + s
+                }
+            },
+        },
+    })
+</script>
+<style>
+    .imgP {
+        width: 50px;
+    }
+</style>

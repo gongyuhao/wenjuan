@@ -1,0 +1,34 @@
+/*
+判断字段是否存在
+*/
+const conn = require('./conn.js')
+
+module.exports = (req, res) => {
+    setTimeout(() => {
+        var filed = req.query.filed,
+            table = req.query.table,
+            value = req.query.value
+        let sql = 'select `id` from `' + table + '` where `' + filed + '`="' + value + '"'
+        conn.query(sql, function (error, result) {
+            if (error == null) {
+                if (result.length == 0) {
+                    res.json({
+                        error: 0,
+                        message: '字段不存在',
+                    })
+                } else {
+                    res.json({
+                        error: 2,
+                        message: '字段不存在',
+                    })
+                }
+            } else {
+                console.log(result)
+                res.json({
+                    error: 1,
+                    message: 'error'
+                })
+            }
+        })
+    }, 500)
+}

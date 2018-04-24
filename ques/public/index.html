@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+    <script src="/js/jquery.min.js"></script>
+    <script src="/js/vue.js"></script>
+    <!-- <script src="/js/element.js"></script> -->
+    <!-- <link rel="stylesheet" href="/js/element.css"> -->
+    <!-- 引入样式 -->
+    <link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">
+    <!-- 引入组件库 -->
+    <script src="https://unpkg.com/element-ui/lib/index.js"></script>
+    <script src="https://cdn.bootcss.com/js-cookie/latest/js.cookie.min.js"></script>
+    <script src="//unpkg.com/echarts/dist/echarts.min.js"></script>
+    <script src="//unpkg.com/v-charts/lib/index.min.js"></script>
+    <link rel="stylesheet" href="/js/webuploader/webuploader.css">
+    <script src="/js/webuploader/webuploader.min.js"></script>
+    <style>
+        * {
+            padding: 0;
+            margin: 0;
+            font-size: 14px;
+        }
+        body{
+            background: url('./img/bg.jpg') no-repeat;
+            background-size: 100% 200%;
+        }
+        #container {
+            box-sizing: border-box;
+        }
+
+        #header {
+            width: 100%;
+            margin: 0 auto;
+            /* background: red; */
+            padding: 10px;
+            box-sizing: border-box;
+        }
+
+        #content {
+            display: flex;
+            overflow: hidden;
+        }
+
+        #cleft {
+            width: 15%;
+            overflow: hidden;
+            /* border-right: 1px solid #ddd; */
+        }
+
+        #cright {
+            flex: 1;
+            /* border: 1px solid #ddd; */
+        }
+
+        .el-menu {
+            border: 0
+        }
+
+        #cBtn a {
+            text-decoration: none;
+            color: #fff;
+            display: inline-block;
+        }
+
+        #cBtn {
+            float: right;
+        }
+
+        .iti {
+            /* float: left; */
+            margin-left: 29%;
+            font-size: 20px;
+            color: rgba(252, 255, 255, 0.8);
+        }
+    </style>
+</head>
+
+<body>
+    <div id="container">
+        <div id="header">
+            <img src="/img/logo.png" alt="">
+            <span class="iti">问卷管理系统</span>
+            <el-button type="primary" id="cBtn">
+                <a href="/logout">注销</a>
+            </el-button>
+        </div>
+        <div id="content">
+            <div id="cleft">
+                <el-menu default-active="2" class="el-menu-vertical-demo" @select="loadPage" background-color="#545c64" text-color="#fff"
+                    active-text-color="#ffd04b">
+                    <el-menu-item index="/menu/user.html">
+                        <i class="el-icon-edit"></i>
+                        <span slot="title">个人中心</span>
+                    </el-menu-item>
+                    <el-menu-item index="/menu/users.html">
+                        <i class="el-icon-setting"></i>
+                        <span slot="title">用户管理</span>
+                    </el-menu-item>
+                    <!-- <el-menu-item index="/menu/users1.html">
+                        <i class="el-icon-view"></i>
+                        <span slot="title">用户查询</span>
+                    </el-menu-item> -->
+                    <el-menu-item index="/menu/outline.html">
+                        <i class="el-icon-share"></i>
+                        <span slot="title">大纲管理</span>
+                    </el-menu-item>
+                    <el-menu-item index="/menu/papers.html">
+                        <i class="el-icon-share"></i>
+                        <span slot="title">问卷管理</span>
+                    </el-menu-item>
+                    <el-menu-item index="/menu/item.html">
+                        <i class="el-icon-share"></i>
+                        <span slot="title">选项管理</span>
+                    </el-menu-item>
+                </el-menu>
+            </div>
+            <div id="cright">
+
+            </div>
+        </div>
+        <div id="footer">
+
+        </div>
+    </div>
+</body>
+
+</html>
+<script>
+    var indexVm = new Vue({
+        el: '#container',
+        data: {},
+        methods: {
+            loadPage: function (index) {
+                $.get(index, function (result) {
+                    $('#cright').html(result)
+                })
+            },
+        }
+    })
+</script>

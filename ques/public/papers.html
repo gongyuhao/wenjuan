@@ -1,0 +1,151 @@
+<div id="paper">
+    <div class="pabtn">
+        <el-button type="primary" size="mini" onclick="indexVm.loadPage('/menu/papers_add.html')">创建问卷</el-button>
+    </div>
+    <el-table v-loading="loading" :data="paperData.slice((currentPage-1)*pagesize,currentPage*pagesize)" style="width: 100%">
+        <el-table-column prop="title" label="标题" width="180">
+        </el-table-column>
+        <el-table-column label="创建人" width="180">
+            <template slot-scope="scope">
+                <el-tag>{{scope.row.creator_id}}</el-tag>
+            </template>
+        </el-table-column>
+        <el-table-column label="创建时间">
+            <template slot-scope="scope">
+                {{scope.row.ctime | time}}
+            </template>
+        </el-table-column>
+        <el-table-column label="操作">
+            <template slot-scope="scope">
+                <el-button size="mini" @click="loadPage(scope.row.id)">编辑</el-button>
+                <el-button size="mini" @click="answer(scope.row.id)">详情</el-button>
+                <el-button size="mini" type="danger" @click.native.prevent="del(scope, paperData)">删除</el-button>
+                <el-button type="primary" id="Pa" size="mini">
+                    <a target="_blank" :href="'/papers/release?id='+scope.row.id">发布</a>
+                </el-button>
+            </template>
+        </el-table-column>
+    </el-table>
+    <el-pagination @size-change="handleSizeChange" @current-change="handleCurrentChange" :current-page="currentPage" :page-sizes="[3, 5, 7, 9]"
+        :page-size="pagesize" layout="total, sizes, prev, pager, next, jumper" :total="paperData.length">
+    </el-pagination>
+</div>
+<script>
+    new Vue({
+        el: '#paper',
+        data: function () {
+            return {
+                paperData: [],
+                loading: true,
+                match: [],
+                currentPage: 1,
+                pagesize: 7,
+            }
+        },
+        created: function () {
+            var _this = this
+            $.get('/papers', function (result) {
+                if (result.error != 0) {
+                    return
+                }
+                _this.paperData = result.data
+                $.get('/users/get', function (result) {
+                    if (result.error == 0) {
+                        _this.match = result.data
+                        for (var i = 0; i < _this.paperData.length; i++) {
+                            for (var j = 0; j < _this.match.length; j++) {
+                                if (_this.paperData[i].creator_id == _this.match[j].id) {
+                                    _this.paperData[i].creator_id = _this.match[j].username
+                                }
+                            }
+                        }
+                    }
+                })
+                _this.loading = false
+            })
+        },
+        methods: {
+            del: function (scope) {//删除用户
+                var _this = this
+                this.$confirm('注意:删除后不可恢复!', '确定删除吗?', {
+                    confirmButtonText: '确定',
+                    cancelButtonText: '取消',
+                    type: 'warning',
+                    callback: function (action) {
+                        if (action == 'cancel') {
+                            return
+                        }
+                        //确认后删除
+                        _this.loading = true
+                        $.get('/papers/del', { id: scope.row.id }, function (result) {
+                            if (result.error == 0) {
+                                _this.paperData.splice(scope.$index, 1)
+                                _this.$message({
+                                    type: 'success',
+                                    message: '删除成功!'
+                                })
+                            } else {
+                                console.error('删除失败')
+                            }
+                            _this.loading = false
+                        })
+                    }
+                })
+            },
+            loadPage: function (id) {
+                indexVm.loadPage('/menu/papers_edit.html?paper_id=' + id)
+            },
+            answer: function (id) {
+                indexVm.loadPage('/menu/papers_answer.html?paper_id=' + id)
+            },
+            handleSizeChange(val) {
+                this.pagesize = val;
+                //        console.log(`每页 ${val} 条`);
+            },
+            handleCurrentChange(val) {
+                this.currentPage = val;
+            },
+        },
+        filters: {
+            //时间格式化
+            time(time) {
+                if (new Date(time).getTime() != '0') {
+                    var ny = new Date(time),
+                        n = ny.getFullYear(),
+                        m = ny.getMonth() + 1,
+                        d = ny.getDate(),
+                        h = ny.getHours(),
+                        ms = ny.getMinutes(),
+                        s = ny.getSeconds()
+                    if (m < 10) {
+                        m = '0' + m
+                    }
+                    if (d < 10) {
+                        d = '0' + d
+                    }
+                    if (h < 10) {
+                        h = '0' + h
+                    }
+                    if (ms < 10) {
+                        ms = '0' + ms
+                    }
+                    if (s < 10) {
+                        s = '0' + s
+                    }
+                    return n + '-' + m + '-' + d + ' ' + h + ':' + ms + ':' + s
+                }
+            },
+        },
+    })
+</script>
+
+<style>
+    .pabtn {
+        padding: 10px;
+    }
+
+    #Pa a {
+        text-decoration: none;
+        color: #fff
+    }
+</style>

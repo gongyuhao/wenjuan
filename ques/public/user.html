@@ -1,0 +1,278 @@
+<div id="users">
+    <el-table v-loading="loading" :data="usersData" style="width: 100%">
+        <el-table-column>
+            <template slot-scope="scope">
+                <el-form label-position="left" inline class="demo-table-expand">
+                    <el-form-item label="头像">
+                        <img :src="scope.row.photo" alt="" class="imgPh">
+                        <el-button size="mini" @click="photo(scope.row.id)">修改头像</el-button>
+                    </el-form-item>
+                    <el-form-item label="用户名">
+                        <span>{{ scope.row.username }}</span>
+                    </el-form-item>
+                    <el-form-item label="编号">
+                        <span>{{ scope.row.id }}</span>
+                    </el-form-item>
+                    <el-form-item label="性别">
+                        <span>{{ sex[scope.row.sex] }}</span>
+                    </el-form-item>
+                    <el-form-item label="邮箱">
+                        <span>{{ scope.row.email }}</span>
+                        <a href="" @click.prevent.stop="detE(usersData)">修改邮箱</a>
+                    </el-form-item>
+                    <el-form-item label="手机号">
+                        <span>{{ scope.row.phone }}</span>
+                        <a href="" @click.prevent.stop="detP(usersData)">修改手机号</a>
+                    </el-form-item>
+                    <el-form-item label="创建时间">
+                        <span>{{scope.row.ctime | time}}</span>
+                    </el-form-item>
+                    <el-form-item label="修改时间">
+                        <span>{{scope.row.mtime | time}}</span>
+                    </el-form-item>
+                    <el-button size="mini" @click="editFrom(scope)" id='Btn'>修改密码</el-button>
+                </el-form>
+            </template>
+        </el-table-column>
+    </el-table>
+    <el-dialog title="编辑" :visible.sync="dialogFormVisible">
+        <el-form :model="form" id="regFrm" :status-icon="true" :rules="rules" label-position="left" ref="form">
+            <el-form-item label="新密码" :label-width="formLabelWidth" prop="password">
+                <el-input v-model="form.password" auto-complete="off" type="password"></el-input>
+            </el-form-item>
+            <el-form-item label="确认密码" :label-width="formLabelWidth" prop="password2">
+                <el-input v-model="form.password2" auto-complete="off" type="password"></el-input>
+            </el-form-item>
+        </el-form>
+        <div slot="footer" class="dialog-footer">
+            <el-button @click="dialogFormVisible = false">取 消</el-button>
+            <el-button type="primary" @click="Edit()">确 定</el-button>
+        </div>
+    </el-dialog>
+</div>
+<script>
+    new Vue({
+        el: '#users',
+        data: function () {
+            var _this = this
+            var chkPwd = function (value, callback) {
+                // console.log(_this.form.password)
+                if (value.trim() == '') {
+                    callback(new Error('请输入确认密码'))
+                } else if (value == _this.form.password) {
+                    callback()
+                } else {
+                    callback(new Error('两次密码不一致'))
+                }
+            }
+            return {
+                usersData: [],
+                sex: ['', '男', '女', '保密'],
+                loading: true,
+                dialogFormVisible: false,
+                form: {
+                    id: '',
+                    password: '',
+                    password2: ''
+                },
+                formLabelWidth: '80px',
+                rules: {
+                    password: [
+                        {
+                            validator: function (rule, value, callback) {
+                                var len = value.length
+                                if (value.trim() == '') {
+                                    callback(new Error('请输入密码'))
+                                } else if (len < 6 || len > 18) {
+                                    callback(new Error('密码长度6到18个字符'))
+                                } else {
+                                    _this.$refs.form.validateField('password2')
+                                    callback()
+                                }
+                            }
+                        }
+                    ],
+                    password2: [
+                        {
+                            validator: function (rule, value, callback) {
+                                chkPwd(value, callback)
+                            }
+                        }
+                    ]
+                }
+            }
+        },
+        created: function () {//获取用户信息
+            var _this = this
+            $.get('/user/get', function (result) {
+                if (result.error == 0) {
+                    _this.usersData = result.data
+                } else {
+                    console.error('数据获取失败')
+                }
+                _this.loading = false
+            }, 'json')
+        },
+        methods: {
+            editFrom: function (scope) {
+                this.form.id = scope.row.id
+                this.dialogFormVisible = true
+            },
+            Edit: function () {
+                var _this = this
+                $.post('/pass/edit', {
+                    id: _this.form.id,
+                    password: _this.form.password
+                }, function (result) {
+                    if (result.error == 0) {
+                        console.log(result)
+                        _this.$message({
+                            type: 'success',
+                            message: '修改成功!'
+                        })
+                    } else {
+                        _this.$message({
+                            type: 'error',
+                            message: '修改失败!'
+                        })
+                    }
+                    _this.dialogFormVisible = false
+                })
+            },
+            detE: function (data) {
+                var _this = this
+                console.log(data[0].id)
+                console.log(data[0].email)
+                this.$prompt('请输入内容', '编辑节点', {
+                    inputPattern: /^.+$/,
+                    inputErrorMessage: '内容不能为空',
+                    inputValue: data[0].email,
+                    callback: function (action, obj) {
+                        if (action != 'confirm') {
+                            return
+                        }
+                        $.post('/email/edit', {
+                            id: data[0].id,
+                            email: obj.inputValue
+                        }, function (result) {
+                            if (result.error != 0) {
+                                _this.$message({
+                                    type: 'error',
+                                    message: '修改失败!'
+                                })
+                                return
+                            }
+                            _this.$message({
+                                type: 'success',
+                                message: '修改成功!'
+                            })
+                            $.get('/user/get', function (result) {
+                                if (result.error == 0) {
+                                    _this.usersData = result.data
+                                } else {
+                                    console.error('数据获取失败')
+                                }
+                            }, 'json')
+                        })
+
+                    }
+                })
+            },
+            detP: function (data) {
+                var _this = this
+                this.$prompt('请输入内容', '编辑节点', {
+                    inputPattern: /^.+$/,
+                    inputErrorMessage: '内容不能为空',
+                    inputValue: data[0].phone,
+                    callback: function (action, obj) {
+                        if (action != 'confirm') {
+                            return
+                        }
+                        $.post('/phone/edit', {
+                            id: data[0].id,
+                            phone: obj.inputValue
+                        }, function (result) {
+                            if (result.error != 0) {
+                                _this.$message({
+                                    type: 'error',
+                                    message: '修改失败!'
+                                })
+                                return
+                            }
+                            _this.$message({
+                                type: 'success',
+                                message: '修改成功!'
+                            })
+                            $.get('/user/get', function (result) {
+                                if (result.error == 0) {
+                                    _this.usersData = result.data
+                                } else {
+                                    console.error('数据获取失败')
+                                }
+                            }, 'json')
+                        })
+
+                    }
+                })
+            },
+            photo:function(id){
+                indexVm.loadPage('/menu/photo.html?paper_id=' + id)
+            }
+        },
+        filters: {
+            //时间格式化
+            time(time) {
+                if (new Date(time).getTime() != '0') {
+                    var ny = new Date(time),
+                        n = ny.getFullYear(),
+                        m = ny.getMonth() + 1,
+                        d = ny.getDate(),
+                        h = ny.getHours(),
+                        ms = ny.getMinutes(),
+                        s = ny.getSeconds()
+                    if (m < 10) {
+                        m = '0' + m
+                    }
+                    if (d < 10) {
+                        d = '0' + d
+                    }
+                    if (h < 10) {
+                        h = '0' + h
+                    }
+                    if (ms < 10) {
+                        ms = '0' + ms
+                    }
+                    if (s < 10) {
+                        s = '0' + s
+                    }
+                    return n + '-' + m + '-' + d + ' ' + h + ':' + ms + ':' + s
+                }
+            },
+        },
+    })
+</script>
+<style>
+    .demo-table-expand {
+        font-size: 0;
+    }
+
+    .demo-table-expand label {
+        width: 90px;
+        color: #99a9bf;
+    }
+
+    .demo-table-expand .el-form-item {
+        margin-right: 0;
+        margin-bottom: 0;
+        width: 50%;
+        height: 80px;
+    }
+
+    #Btn {
+        float: right;
+        margin-right: 150px;
+    }
+    .imgPh{
+        width: 50px;
+    }
+</style>

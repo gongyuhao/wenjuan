@@ -1,0 +1,132 @@
+<div id="paperAdd">
+
+    <div class="cont">
+        <el-card class="cleft">
+            <el-tree default-expand-all :data="outline" :props="defaultProps" show-checkbox @check-change="selectNode">
+            </el-tree>
+        </el-card>
+        <div class="cright" style="width: 77%">
+            <el-card style="margin: 5px;width: 60%;float: left;" v-for="(item,index) in page.content" :key="'page_'+index" :header="item.text">
+                <el-radio-group v-model="radio2">
+                    <el-radio v-for="(i,index) in page.item" :key="'item_'+index" :label="i.id">{{i.text}}</el-radio>
+                </el-radio-group>
+            </el-card>
+            <el-card id="elr">
+                <el-tree default-expand-all :data="outline2" :props="defaultProps" show-checkbox @check-change="selectNode1">
+                </el-tree>
+            </el-card>
+        </div>
+    </div>
+    <div slot="footer" class="dialog-footer">
+        <el-button onclick="indexVm.loadPage('/menu/papers.html')">取 消</el-button>
+        <el-button type="primary" @click="saveQues">确 定</el-button>
+    </div>
+</div>
+<script>
+    new Vue({
+        el: '#paperAdd',
+        data: function () {
+            return {
+                defaultProps: {
+                    children: 'children',
+                    label: 'text'
+                },
+                radio2: '',
+                outline: [],
+                outline2: [],
+                page: {
+                    content: [],
+                    title: '',
+                    item: [],
+                },
+            }
+        },
+        created: function () {
+            var _this = this
+            $.get('/outline', function (result) {
+                if (result.error != 0) {
+                    return
+                }
+                _this.outline = result.data
+            })
+            $.get('/item/get', function (result) {
+                if (result.error != 0) {
+                    return
+                }
+                _this.outline2 = result.data
+                console.log(_this.outline2)
+            })
+        },
+        methods: {
+            selectNode: function (data, isSelect) {
+                if (data.children.length == 0) {
+                    if (isSelect) {
+                        this.page.content.push(data)
+                    } else {
+                        var index = this.page.content.indexOf(data)
+                        this.page.content.splice(index, 1)
+                    }
+                    console.log(this.page.content)
+                }
+            },
+            selectNode1: function (data, isSelect) {
+                if (data.children.length == 0) {
+                    if (isSelect) {
+                        this.page.item.push(data)
+                    } else {
+                        var index = this.page.item.indexOf(data)
+                        this.page.item.splice(index, 1)
+                    }
+                    console.log(this.page.item)
+                }
+            },
+            saveQues: function () {
+                var _this = this
+                this.$prompt('请输入问卷标题', '提示', {
+                    confirmButtonText: '确定',
+                    cancelButtonText: '取消',
+                    inputPattern: /^.+$/,
+                    inputErrorMessage: '标题不能为空',
+                    callback: function (action, obj) {
+                        if (action == 'confirm') {
+                            _this.page.title = obj.inputValue
+                            $.post('/pages/add', {
+                                title: _this.page.title,
+                                item: JSON.stringify(_this.page.item),
+                                content: JSON.stringify(_this.page.content),
+                            }, function (result) {
+                                console.log(result)
+                                if (result.error == 0) {
+                                    _this.$message({
+                                        type: 'success',
+                                        message: '添加成功!'
+                                    })
+                                } else {
+                                    _this.$message({
+                                        type: 'error',
+                                        message: '添加失败!'
+                                    })
+                                }
+                                indexVm.loadPage('/menu/papers.html')
+                            })
+                        }
+                    }
+                })
+            },
+        }
+    })
+</script>
+
+<style>
+    .cont {
+        overflow: hidden;
+    }
+
+    .cont>div {
+        float: left;
+    }
+
+    .dialog-footer {
+        float: right;
+    }
+</style>

@@ -1,0 +1,168 @@
+<div id="paperEdit">
+    <h2>编辑</h2>
+    <div class="cont">
+        <el-card class="cleft">
+            <el-tree ref="tree" node-key="id" default-expand-all :data="outline" :props="defaultProps" show-checkbox @check-change="selectNode">
+            </el-tree>
+        </el-card>
+        <div class="cright" style="width: 77%">
+            <el-card style="margin: 5px;width: 60%;float: left;" v-for="(item,index) in page.content" :key="'page_'+index" :header="item.text">
+                <el-radio-group v-model="radio2">
+                    <el-radio v-for="(i,index) in page.item" :key="'item_'+index" :label="i.id">{{i.text}}</el-radio>
+                </el-radio-group>
+            </el-card>
+            <el-card id="elr">
+                <el-tree ref="tree1" node-key="id" default-expand-all :data="outline2" :props="defaultProps" show-checkbox @check-change="selectNode1">
+                </el-tree>
+            </el-card>
+        </div>
+    </div>
+    <div slot="footer" class="dialog-footer">
+        <el-button onclick="indexVm.loadPage('/menu/papers.html')">取 消</el-button>
+        <el-button type="primary" @click="editQues">确 定</el-button>
+    </div>
+</div>
+<script>
+    new Vue({
+        el: '#paperEdit',
+        data: function () {
+            return {
+                defaultProps: {
+                    children: 'children',
+                    label: 'text'
+                },
+                radio2: '',
+                outline: [],
+                outline2:[],
+                page: {
+                    content: [],
+                    title: '',
+                    id: '',
+                    // item: [
+                    //     {
+                    //         id: 1,
+                    //         text: '优秀',
+                    //         val: '5'
+                    //     },
+                    //     {
+                    //         id: 2,
+                    //         text: '良好',
+                    //         val: '4'
+                    //     },
+                    //     {
+                    //         id: 3,
+                    //         text: '中等',
+                    //         val: '3'
+                    //     },
+                    //     {
+                    //         id: 4,
+                    //         text: '很差',
+                    //         val: '2'
+                    //     },
+                    // ]
+                    item:[]
+                },
+            }
+        },
+        created: function () {
+            var _this = this
+            $.get('/outline', function (result) {
+                if (result.error != 0) {
+                    return
+                }
+                _this.outline = result.data
+            })
+            $.get('/item/get', function (result) {
+                if (result.error != 0) {
+                    return
+                }
+                _this.outline2 = result.data
+                console.log(_this.outline2)
+            })
+            $.get('/papers/find', { id: Cookies.get('paper_id') }, function (result) {
+                if (result.error != 0) {
+                    return
+                }
+                console.log(result)
+                _this.$refs.tree.setCheckedNodes(JSON.parse(result.data.content))
+                _this.$refs.tree1.setCheckedNodes(JSON.parse(result.data.item))
+                _this.page.title = result.data.title
+                _this.page.id = result.data.id
+            })
+        },
+        methods: {
+            selectNode: function (data, isSelect) {
+                if (data.children.length == 0) {
+                    if (isSelect) {
+                        this.page.content.push(data)
+                    } else {
+                        var index = this.page.content.indexOf(data)
+                        this.page.content.splice(index, 1)
+                    }
+                }
+            },
+            selectNode1: function (data, isSelect) {
+                if (data.children.length == 0) {
+                    if (isSelect) {
+                        this.page.item.push(data)
+                    } else {
+                        var index = this.page.item.indexOf(data)
+                        this.page.item.splice(index, 1)
+                    }
+                    console.log(this.page.item)
+                }
+            },
+            editQues: function () {
+                var _this = this
+                this.$prompt('请输入问卷标题', '提示', {
+                    confirmButtonText: '确定',
+                    cancelButtonText: '取消',
+                    inputPattern: /^.+$/,
+                    inputErrorMessage: '标题不能为空',
+                    inputValue: _this.page.title,
+                    callback: function (action, obj) {
+                        if (action == 'confirm') {
+                            _this.page.title = obj.inputValue
+                            $.post('/papers/edit', {
+                                id: _this.page.id,
+                                title: _this.page.title,
+                                content: JSON.stringify(_this.page.content),
+                                item: JSON.stringify(_this.page.item)
+                            }, function (result) {
+                                if (result.error == 0) {
+                                    console.log(result)
+                                    _this.$message({
+                                        type: 'success',
+                                        message: '编辑成功!'
+                                    })
+                                    indexVm.loadPage('/menu/papers.html')
+                                } else {
+                                    _this.$message({
+                                        type: 'error',
+                                        message: '编辑失败!'
+                                    })
+                                    console.log("编辑失败")
+                                }
+                            })
+                        }
+                    }
+                })
+
+            }
+        }
+    })
+</script>
+
+<style>
+    .cont {
+        overflow: hidden;
+    }
+
+    .cont>div {
+        float: left;
+    }
+
+    .dialog-footer {
+        float: right;
+    }
+</style>
